@@ -1,8 +1,45 @@
 AllCops:
-  TargetRubyVersion: 3.2
+  NewCops: enable
+  TargetRubyVersion: 3.0
+  Exclude:
+    - 'bin/*'
+    - 'vendor/**/*'
+    - 'node_modules/**/*'
+
+require:
+  - rubocop-performance
+  - rubocop-rspec
+
+# Gem-specific customizations
+Style/Documentation:
+  Enabled: false
 
 Style/StringLiterals:
-  EnforcedStyle: double_quotes
+  EnforcedStyle: single_quotes
 
 Style/StringLiteralsInInterpolation:
-  EnforcedStyle: double_quotes
+  EnforcedStyle: single_quotes
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*.rb'
+    - '*.gemspec'
+
+Metrics/MethodLength:
+  Max: 15
+  Exclude:
+    - 'spec/**/*.rb'
+
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - 'spec/**/*.rb'
+
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/NestedGroups:
+  Max: 4
+
+RSpec/ExampleLength:
+  Max: 15
