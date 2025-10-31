@@ -12,7 +12,8 @@ gem 'erb', '< 5.0' # erb 5.0+ requires Ruby >= 3.2
 
 # Development dependencies
 gem 'pry', '~> 0.14'
-gem 'pry-byebug', '~> 3.10', platform: :mri
+# Note: pry-byebug requires Ruby >= 3.1 (via byebug). Install manually if needed:
+#   gem install pry-byebug  # on Ruby >= 3.1
 gem 'rake', '~> 13.0'
 gem 'rspec', '~> 3.12'
 gem 'rubocop', '~> 1.50'
