@@ -55,5 +55,14 @@ RSpec/NestedGroups:
 RSpec/ExampleLength:
   Max: 15
 
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/StubbedMock:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
+
 MultipleDescribes:
   Enabled: false

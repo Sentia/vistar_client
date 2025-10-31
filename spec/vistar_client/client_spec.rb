@@ -138,6 +138,13 @@ RSpec.describe VistarClient::Client do
       expect(middleware).to include(Faraday::Response::Json)
     end
 
+    it 'includes error handler middleware' do
+      connection = client.send(:connection)
+      middleware = connection.builder.handlers
+
+      expect(middleware).to include(VistarClient::Middleware::ErrorHandler)
+    end
+
     context 'with custom api_base_url' do
       let(:custom_url) { 'https://staging.api.example.com' }
       let(:client) { described_class.new(**valid_params, api_base_url: custom_url) }

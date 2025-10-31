@@ -3,6 +3,7 @@
 require 'faraday'
 require 'faraday/retry'
 require 'json'
+require_relative 'middleware/error_handler'
 
 module VistarClient
   # The main client class for interacting with the Vistar Media API.
@@ -82,6 +83,7 @@ module VistarClient
     # The connection includes:
     # - JSON request/response handling
     # - Automatic retry logic for transient failures
+    # - Custom error handling (maps HTTP errors to gem exceptions)
     # - Request/response logging (when VISTAR_DEBUG is set)
     # - Timeout configuration
     # - Authorization header with Bearer token
@@ -107,6 +109,9 @@ module VistarClient
 
         # Response middleware
         faraday.response :json, content_type: /\bjson$/
+
+        # Custom error handling middleware
+        faraday.use VistarClient::Middleware::ErrorHandler
 
         # Logging middleware (only when debugging)
         faraday.response :logger, nil, { headers: true, bodies: true } if ENV['VISTAR_DEBUG']
