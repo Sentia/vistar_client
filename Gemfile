@@ -9,7 +9,7 @@ gem 'irb'
 
 # Development dependencies
 gem 'pry', '~> 0.14'
-gem 'pry-byebug', '~> 3.10'
+gem 'pry-byebug', '~> 3.10', platform: :mri if RUBY_VERSION >= '3.1.0'
 gem 'rake', '~> 13.0'
 gem 'rspec', '~> 3.12'
 gem 'rubocop', '~> 1.50'
