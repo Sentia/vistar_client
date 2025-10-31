@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
 module VistarClient
-  VERSION = '0.1.0'
+  # Current version of the VistarClient gem
+  # @return [String] the semantic version number
+  VERSION = '0.2.0'
 end

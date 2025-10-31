@@ -16,3 +16,4 @@
 # Internal documentation and instructions
 /docs/internal/*
 .github/copilot-instructions.md
+*.gem

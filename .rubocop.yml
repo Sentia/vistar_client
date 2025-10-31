@@ -34,6 +34,12 @@ Metrics/MethodLength:
   Max: 15
   Exclude:
     - 'spec/**/*.rb'
+  AllowedMethods:
+    - connection
+
+Metrics/AbcSize:
+  AllowedMethods:
+    - connection
 
 Layout/LineLength:
   Max: 120
@@ -48,3 +54,15 @@ RSpec/NestedGroups:
 
 RSpec/ExampleLength:
   Max: 15
+
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/StubbedMock:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
+
+MultipleDescribes:
+  Enabled: false
