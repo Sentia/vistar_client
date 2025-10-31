@@ -10,6 +10,10 @@ SimpleCov.start do
 end
 
 require 'vistar_client'
+require 'webmock/rspec'
+
+# Disable external HTTP requests during tests
+WebMock.disable_net_connect!(allow_localhost: true)
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

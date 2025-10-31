@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require 'faraday'
-require 'faraday/retry'
-require 'json'
-require_relative 'middleware/error_handler'
+require_relative 'connection'
+require_relative 'api/ad_serving'
 
 module VistarClient
   # The main client class for interacting with the Vistar Media API.
+  #
+  # This class serves as the primary entry point for all API operations.
+  # It delegates to specialized API modules for different endpoint groups.
   #
   # @example Initialize a client
   #   client = VistarClient::Client.new(
@@ -22,6 +23,8 @@ module VistarClient
   #     timeout: 30
   #   )
   class Client
+    include API::AdServing
+
     # Default API base URL for Vistar Media
     DEFAULT_API_BASE_URL = 'https://api.vistarmedia.com'
 
@@ -61,6 +64,12 @@ module VistarClient
       @network_id = network_id
       @api_base_url = api_base_url
       @timeout = timeout
+
+      @connection = Connection.new(
+        api_key: api_key,
+        api_base_url: api_base_url,
+        timeout: timeout
+      )
     end
 
     private
@@ -78,51 +87,9 @@ module VistarClient
       raise ArgumentError, 'network_id is required and cannot be empty' if network_id.nil? || network_id.empty?
     end
 
-    # Create and configure a Faraday connection instance.
+    # Get the HTTP connection instance.
     #
-    # The connection includes:
-    # - JSON request/response handling
-    # - Automatic retry logic for transient failures
-    # - Custom error handling (maps HTTP errors to gem exceptions)
-    # - Request/response logging (when VISTAR_DEBUG is set)
-    # - Timeout configuration
-    # - Authorization header with Bearer token
-    #
-    # @return [Faraday::Connection] a configured Faraday connection
-    def connection
-      @connection ||= Faraday.new(url: api_base_url) do |faraday|
-        # Set default headers
-        faraday.headers['Authorization'] = "Bearer #{api_key}"
-        faraday.headers['Accept'] = 'application/json'
-        faraday.headers['Content-Type'] = 'application/json'
-
-        # Request middleware
-        faraday.request :json
-        faraday.request :retry, {
-          max: 3,
-          interval: 0.5,
-          interval_randomness: 0.5,
-          backoff_factor: 2,
-          retry_statuses: [429, 500, 502, 503, 504],
-          methods: %i[get post put patch delete]
-        }
-
-        # Response middleware
-        faraday.response :json, content_type: /\bjson$/
-
-        # Custom error handling middleware
-        faraday.use VistarClient::Middleware::ErrorHandler
-
-        # Logging middleware (only when debugging)
-        faraday.response :logger, nil, { headers: true, bodies: true } if ENV['VISTAR_DEBUG']
-
-        # Adapter
-        faraday.adapter Faraday.default_adapter
-
-        # Configure timeout
-        faraday.options.timeout = timeout
-        faraday.options.open_timeout = timeout
-      end
-    end
+    # @return [VistarClient::Connection] the HTTP connection
+    attr_reader :connection
   end
 end

@@ -9,11 +9,130 @@ RSpec.describe VistarClient::Middleware::ErrorHandler do
   let(:env) { {} }
 
   describe '#call' do
-    context 'when request succeeds' do
-      it 'passes through to the next middleware' do
-        expect(app).to receive(:call).with(env).and_return(double('response'))
+    context 'when request succeeds with 2xx' do
+      let(:response) { double('response', status: 200, body: { 'success' => true }, env: { status: 200, body: { 'success' => true } }) }
 
-        middleware.call(env)
+      it 'passes through to the next middleware' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        result = middleware.call(env)
+        expect(result).to eq(response)
+      end
+    end
+
+    context 'when response has 401 status' do
+      let(:response) { double('response', status: 401, body: { 'error' => 'Invalid API key' }, env: {}) }
+
+      it 'raises AuthenticationError with extracted message' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        expect { middleware.call(env) }.to raise_error(
+          VistarClient::AuthenticationError,
+          /Invalid API key/
+        )
+      end
+    end
+
+    context 'when response has 401 status without error message' do
+      let(:response) { double('response', status: 401, body: {}, env: {}) }
+
+      it 'raises AuthenticationError with default message' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        expect { middleware.call(env) }.to raise_error(
+          VistarClient::AuthenticationError,
+          /Authentication failed/
+        )
+      end
+    end
+
+    context 'when response has 4xx status' do
+      let(:response) { double('response', status: 400, body: { 'error' => 'Bad request' }, env: {}) }
+
+      it 'raises APIError with status code and message' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        expect { middleware.call(env) }.to raise_error(VistarClient::APIError) do |error|
+          expect(error.message).to include('Bad request')
+          expect(error.status_code).to eq(400)
+          expect(error.response_body).to eq({ 'error' => 'Bad request' })
+        end
+      end
+    end
+
+    context 'when response has 4xx status with message field' do
+      let(:response) { double('response', status: 400, body: { 'message' => 'Validation failed' }, env: {}) }
+
+      it 'extracts error from message field' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        expect { middleware.call(env) }.to raise_error(
+          VistarClient::APIError,
+          /Validation failed/
+        )
+      end
+    end
+
+    context 'when response has 4xx status with error_description field' do
+      let(:response) { double('response', status: 400, body: { 'error_description' => 'Missing required field' }, env: {}) }
+
+      it 'extracts error from error_description field' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        expect { middleware.call(env) }.to raise_error(
+          VistarClient::APIError,
+          /Missing required field/
+        )
+      end
+    end
+
+    context 'when response has 4xx status without error message' do
+      let(:response) { double('response', status: 400, body: {}, env: {}) }
+
+      it 'uses default error message with status code' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        expect { middleware.call(env) }.to raise_error(
+          VistarClient::APIError,
+          /API request failed with status 400/
+        )
+      end
+    end
+
+    context 'when response has 4xx status with non-hash body' do
+      let(:response) { double('response', status: 400, body: 'plain text error', env: {}) }
+
+      it 'uses default error message' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        expect { middleware.call(env) }.to raise_error(
+          VistarClient::APIError,
+          /API request failed with status 400/
+        )
+      end
+    end
+
+    context 'when response has 5xx status' do
+      let(:response) { double('response', status: 500, body: { 'error' => 'Internal server error' }, env: {}) }
+
+      it 'raises APIError with status code and message' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        expect { middleware.call(env) }.to raise_error(VistarClient::APIError) do |error|
+          expect(error.message).to include('Internal server error')
+          expect(error.status_code).to eq(500)
+          expect(error.response_body).to eq({ 'error' => 'Internal server error' })
+        end
+      end
+    end
+
+    context 'when response has 3xx redirect status' do
+      let(:response) { double('response', status: 302, body: {}, env: {}) }
+
+      it 'does not raise an error' do
+        expect(app).to receive(:call).with(env).and_return(response)
+
+        expect { middleware.call(env) }.not_to raise_error
       end
     end
 
@@ -43,119 +162,6 @@ RSpec.describe VistarClient::Middleware::ErrorHandler do
           VistarClient::ConnectionError,
           /Network error: network error/
         )
-      end
-    end
-  end
-
-  describe '#on_complete' do
-    let(:env) { { status: status, body: body } }
-    let(:body) { {} }
-
-    context 'with 401 status' do
-      let(:status) { 401 }
-
-      it 'raises AuthenticationError' do
-        expect { middleware.on_complete(env) }.to raise_error(
-          VistarClient::AuthenticationError,
-          /Authentication failed/
-        )
-      end
-
-      context 'with error message in response' do
-        let(:body) { { 'error' => 'Invalid API key' } }
-
-        it 'includes the error message' do
-          expect { middleware.on_complete(env) }.to raise_error(
-            VistarClient::AuthenticationError,
-            /Invalid API key/
-          )
-        end
-      end
-    end
-
-    context 'with 4xx client errors' do
-      let(:status) { 400 }
-      let(:body) { { 'error' => 'Bad request' } }
-
-      it 'raises APIError with status code' do
-        expect { middleware.on_complete(env) }.to raise_error(VistarClient::APIError) do |error|
-          expect(error.message).to include('Bad request')
-          expect(error.status_code).to eq(400)
-          expect(error.response_body).to eq(body)
-        end
-      end
-
-      context 'with different error keys' do
-        let(:body) { { 'message' => 'Validation failed' } }
-
-        it 'extracts error from message field' do
-          expect { middleware.on_complete(env) }.to raise_error(
-            VistarClient::APIError,
-            /Validation failed/
-          )
-        end
-      end
-
-      context 'with error_description key' do
-        let(:body) { { 'error_description' => 'Missing required field' } }
-
-        it 'extracts error from error_description field' do
-          expect { middleware.on_complete(env) }.to raise_error(
-            VistarClient::APIError,
-            /Missing required field/
-          )
-        end
-      end
-
-      context 'without error message in body' do
-        let(:body) { {} }
-
-        it 'uses default error message with status code' do
-          expect { middleware.on_complete(env) }.to raise_error(
-            VistarClient::APIError,
-            /API request failed with status 400/
-          )
-        end
-      end
-
-      context 'with non-hash body' do
-        let(:body) { 'plain text error' }
-
-        it 'uses default error message' do
-          expect { middleware.on_complete(env) }.to raise_error(
-            VistarClient::APIError,
-            /API request failed with status 400/
-          )
-        end
-      end
-    end
-
-    context 'with 5xx server errors' do
-      let(:status) { 500 }
-      let(:body) { { 'error' => 'Internal server error' } }
-
-      it 'raises APIError with status code' do
-        expect { middleware.on_complete(env) }.to raise_error(VistarClient::APIError) do |error|
-          expect(error.message).to include('Internal server error')
-          expect(error.status_code).to eq(500)
-          expect(error.response_body).to eq(body)
-        end
-      end
-    end
-
-    context 'with 2xx success status' do
-      let(:status) { 200 }
-
-      it 'does not raise an error' do
-        expect { middleware.on_complete(env) }.not_to raise_error
-      end
-    end
-
-    context 'with 3xx redirect status' do
-      let(:status) { 302 }
-
-      it 'does not raise an error' do
-        expect { middleware.on_complete(env) }.not_to raise_error
       end
     end
   end

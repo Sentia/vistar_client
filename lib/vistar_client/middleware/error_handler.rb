@@ -4,7 +4,7 @@ require 'faraday'
 
 module VistarClient
   module Middleware
-    # Faraday middleware that intercepts HTTP responses and raises
+    # Faraday response middleware that intercepts HTTP responses and raises
     # appropriate VistarClient exceptions based on status codes.
     #
     # This middleware handles:
@@ -14,6 +14,7 @@ module VistarClient
     #
     # @example
     #   Faraday.new do |f|
+    #     f.response :json
     #     f.use VistarClient::Middleware::ErrorHandler
     #     f.adapter Faraday.default_adapter
     #   end
@@ -22,15 +23,6 @@ module VistarClient
       CLIENT_ERROR_RANGE = (400..499)
       SERVER_ERROR_RANGE = (500..599)
 
-      # Initialize the middleware
-      #
-      # @param app [#call] the next middleware in the stack
-      # @param options [Hash] optional configuration (reserved for future use)
-      def initialize(app, options = {})
-        super(app)
-        @options = options
-      end
-
       # Process the request and handle any errors
       #
       # @param env [Faraday::Env] the request environment
@@ -38,55 +30,57 @@ module VistarClient
       # @raise [AuthenticationError] for 401 status
       # @raise [APIError] for other 4xx/5xx status codes
       # @raise [ConnectionError] for network failures
-      def call(env)
-        @app.call(env)
+      def call(request_env)
+        response = @app.call(request_env)
+        check_for_errors(response)
+        response
       rescue Faraday::TimeoutError, Faraday::ConnectionFailed => e
         raise ConnectionError, "Connection failed: #{e.message}"
       rescue Faraday::Error => e
         raise ConnectionError, "Network error: #{e.message}"
       end
 
-      # Handle the response after it's received
+      private
+
+      # Check response for errors and raise appropriate exceptions
       #
-      # @param env [Faraday::Env] the request environment
+      # @param response [Faraday::Response] the HTTP response
       # @return [void]
-      def on_complete(env)
-        case env[:status]
+      def check_for_errors(response)
+        case response.status
         when 401
-          handle_unauthorized(env)
+          handle_unauthorized(response)
         when CLIENT_ERROR_RANGE, SERVER_ERROR_RANGE
-          handle_api_error(env)
+          handle_api_error(response)
         end
       end
 
-      private
-
       # Handle 401 Unauthorized responses
       #
-      # @param env [Faraday::Env] the request environment
+      # @param response [Faraday::Response] the HTTP response
       # @raise [AuthenticationError]
-      def handle_unauthorized(env)
-        message = extract_error_message(env) || 'Authentication failed'
+      def handle_unauthorized(response)
+        message = extract_error_message(response.body) || 'Authentication failed'
         raise AuthenticationError, message
       end
 
       # Handle other 4xx/5xx API errors
       #
-      # @param env [Faraday::Env] the request environment
+      # @param response [Faraday::Response] the HTTP response
       # @raise [APIError]
-      def handle_api_error(env)
-        message = extract_error_message(env) || "API request failed with status #{env[:status]}"
-        raise APIError.new(message, status_code: env[:status], response_body: env[:body])
+      def handle_api_error(response)
+        message = extract_error_message(response.body) || "API request failed with status #{response.status}"
+        raise APIError.new(message, status_code: response.status, response_body: response.body)
       end
 
       # Extract error message from response body
       #
-      # @param env [Faraday::Env] the request environment
+      # @param body [Hash, String, nil] the response body
       # @return [String, nil] the error message if found
-      def extract_error_message(env)
-        return nil unless env[:body].is_a?(Hash)
+      def extract_error_message(body)
+        return nil unless body.is_a?(Hash)
 
-        env[:body]['error'] || env[:body]['message'] || env[:body]['error_description']
+        body['error'] || body['message'] || body['error_description']
       end
     end
   end
