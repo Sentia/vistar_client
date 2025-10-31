@@ -34,6 +34,12 @@ Metrics/MethodLength:
   Max: 15
   Exclude:
     - 'spec/**/*.rb'
+  AllowedMethods:
+    - connection
+
+Metrics/AbcSize:
+  AllowedMethods:
+    - connection
 
 Layout/LineLength:
   Max: 120
