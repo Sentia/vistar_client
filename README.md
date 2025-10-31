@@ -4,7 +4,7 @@
 [![Gem Version](https://badge.fury.io/rb/vistar_client.svg)](https://badge.fury.io/rb/vistar_client)
 [![codecov](https://codecov.io/gh/Sentia/vistar_client/branch/main/graph/badge.svg)](https://codecov.io/gh/Sentia/vistar_client)
 
-A Ruby client library for the Vistar Media API. Provides a clean, modular interface for programmatic ad serving and proof-of-play submission.
+A Ruby client library for the Vistar Media API. Provides a clean, modular interface for programmatic ad serving, creative caching, and loop-based content scheduling for digital signage.
 
 ## Installation
 
@@ -59,7 +59,9 @@ VistarClient
 ├── Connection          # HTTP client wrapper
 ├── API
 │   ├── Base           # Shared API module functionality
-│   └── AdServing      # Ad serving endpoints (request_ad, submit_proof_of_play)
+│   ├── AdServing      # Ad serving endpoints (request_ad, submit_proof_of_play)
+│   ├── CreativeCaching # Creative asset pre-fetching (get_asset)
+│   └── UnifiedServing # Loop-based scheduling (get_loop, submit_loop_tracking)
 ├── Middleware
 │   └── ErrorHandler   # Custom error handling
 └── Error Classes      # AuthenticationError, APIError, ConnectionError
@@ -78,21 +80,25 @@ The `VistarClient::Connection` class manages HTTP communication:
 
 API endpoints are organized into modules by feature domain:
 - `API::AdServing`: Request ads and submit proof of play
-- Future: `API::CreativeCaching`, `API::UnifiedServing` (Sprint 2+)
+- `API::CreativeCaching`: Pre-fetch creative assets for bandwidth optimization
+- `API::UnifiedServing`: Loop-based content scheduling for playlists
 
 ## Features
 
+- **Three Complete APIs**: Ad Serving, Creative Caching, Unified Ad Serving
 - **Modular Architecture**: Clean separation between HTTP layer and business logic
 - **Comprehensive Error Handling**: Custom exceptions for authentication, API, and connection failures
 - **Automatic Retries**: Built-in retry logic for transient failures (429, 5xx errors)
 - **Type Safety**: Parameter validation with descriptive error messages
 - **Debug Logging**: Optional request/response logging via `VISTAR_DEBUG` environment variable
-- **Full Test Coverage**: 98.73% code coverage with 118 test examples
+- **Full Test Coverage**: 98.17% code coverage with 164 test examples
 - **Complete Documentation**: 100% YARD documentation coverage
 
 ## API Methods
 
-### Request Ad
+### Ad Serving API
+
+#### Request Ad
 
 Request a programmatic ad from the Vistar Media API.
 
@@ -137,6 +143,117 @@ response = client.submit_proof_of_play(
 **Returns**: Hash containing proof of play confirmation
 
 **Raises**: Same as `request_ad`
+
+### Creative Caching API
+
+#### Get Asset
+
+Pre-fetch creative assets for the next 30 hours to optimize bandwidth usage.
+
+```ruby
+response = client.get_asset(
+  device_id: 'device-123',              # required: unique device identifier
+  venue_id: 'venue-456',                # required: venue identifier
+  display_time: Time.now.to_i,          # required: epoch seconds (UTC)
+  display_area: {                        # required: display configuration
+    id: 'display-0',
+    width: 1920,
+    height: 1080,
+    supported_media: ['image/jpeg', 'video/mp4'],
+    allow_audio: false
+  },
+  
+  # Optional parameters:
+  device_attribute: [{ name: 'location', value: 'lobby' }],
+  latitude: 37.7749,
+  longitude: -122.4194
+)
+```
+
+**Returns**: Hash with `asset[]` array containing creative metadata:
+- `asset_id`, `creative_id`, `asset_url`
+- `width`, `height`, `mime_type`
+- `length_in_seconds`, `advertiser`, `creative_name`
+
+**Use Case**: Call once daily or on first sight. Cache assets locally by `asset_url`.
+
+**Raises**:
+- `ArgumentError`: Invalid or missing required parameters (device_id, venue_id, display_time, display_area)
+- `AuthenticationError`: Invalid API credentials (401)
+- `APIError`: Other API errors (4xx/5xx)
+- `ConnectionError`: Network failures
+
+### Unified Ad Serving API
+
+#### Get Loop
+
+Get a scheduled loop of content slots for digital signage playlists.
+
+```ruby
+response = client.get_loop(
+  venue_id: 'venue-456',                # required: venue identifier
+  
+  # Optional parameters:
+  display_time: Time.now.to_i + 86400,  # epoch seconds for future scheduling (up to 10 days)
+  with_metadata: true                    # include order/advertiser metadata
+)
+```
+
+**Returns**: Hash containing:
+- `slots[]`: Array of content slots with type (advertisement/content/programmatic)
+  - Each slot includes: `tracking_url`, `asset_url`, `length_in_seconds`, `loop_position`
+  - Programmatic slots don't have `asset_url` (use `request_ad` instead)
+- `assets[]`: Array of unique assets for pre-caching
+- `start_time`, `end_time`: Loop validity window (typically 24 hours)
+
+**Loop Types**:
+- **advertisement**: Direct scheduled ad → play asset → hit tracking URL
+- **content**: Loop-based content → play asset → hit tracking URL  
+- **programmatic**: Make `request_ad` call → play returned ad → submit proof of play
+
+**Business Rules**:
+- Loop repeats until `end_time`
+- Request new loops at least every 30 minutes
+- Maximum 500 slots per response
+- Check `end_time` before each slot, request new loop if expired
+
+**Example Workflow**:
+```ruby
+loop_data = client.get_loop(venue_id: 'venue-456')
+
+loop_data['slots'].each do |slot|
+  case slot['type']
+  when 'advertisement', 'content'
+    play_asset(slot['asset_url'])
+    client.submit_loop_tracking(
+      tracking_url: slot['tracking_url'],
+      display_time: Time.now.to_i
+    )
+  when 'programmatic'
+    ad = client.request_ad(...)
+    # handle programmatic ad
+  end
+end
+```
+
+**Raises**: Same as `get_asset`
+
+#### Submit Loop Tracking
+
+Convenience method to hit tracking URLs with automatic display_time appending.
+
+```ruby
+client.submit_loop_tracking(
+  tracking_url: slot['tracking_url'],   # required: from loop slot
+  display_time: Time.now.to_i           # optional: defaults to current time
+)
+```
+
+**Note**: Tracking URLs don't expire, supporting offline devices (up to 30 days in past).
+
+**Raises**:
+- `ArgumentError`: Missing tracking_url
+- `ConnectionError`: Network failures
 
 ## Configuration
 
