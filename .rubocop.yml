@@ -1,6 +1,7 @@
 AllCops:
   NewCops: enable
   TargetRubyVersion: 3.0
+  SuggestExtensions: false
   Exclude:
     - 'bin/*'
     - 'vendor/**/*'
@@ -9,6 +10,10 @@ AllCops:
 require:
   - rubocop-performance
   - rubocop-rspec
+
+# Disable buggy Capybara cop
+Capybara/RSpec/PredicateMatcher:
+  Enabled: false
 
 # Gem-specific customizations
 Style/Documentation:

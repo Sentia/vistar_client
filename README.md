@@ -1,5 +1,9 @@
 # VistarClient
 
+![CI](https://github.com/Sentia/vistar_client/workflows/CI/badge.svg)
+[![Gem Version](https://badge.fury.io/rb/vistar_client.svg)](https://badge.fury.io/rb/vistar_client)
+[![codecov](https://codecov.io/gh/Sentia/vistar_client/branch/main/graph/badge.svg)](https://codecov.io/gh/Sentia/vistar_client)
+
 A Ruby client library for the Vistar Media API. Provides a clean, type-safe interface for ad serving, proof-of-play submission, and campaign management.
 
 ## Installation
@@ -71,17 +75,52 @@ rescue VistarClient::ConnectionError => e
 end
 ```
 
-## Development and Testing
+## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then run:
+After checking out the repo, run `bin/setup` to install dependencies.
+
+### Environment Setup
+
+1. Copy `.env.example` to `.env`
+2. Add your Vistar API credentials
+3. Use `staging_client` helper in console for testing
+
+### Running Tests
 
 ```bash
-rake spec         # Run tests
-rubocop           # Check code style
-yard doc          # Generate documentation
+bundle exec rspec         # Run all tests
+bundle exec rspec --tag focus  # Run focused tests
+bundle exec rspec --profile    # Show slowest tests
 ```
 
-To install locally: `bundle exec rake install`
+### Code Quality
+
+```bash
+bundle exec rubocop       # Check code style
+bundle exec rubocop -A    # Auto-correct offenses
+```
+
+### Documentation
+
+```bash
+bundle exec yard doc      # Generate documentation
+bundle exec yard server   # View docs at http://localhost:8808
+```
+
+### Interactive Console
+
+```bash
+bin/console               # Start Pry console with gem loaded
+```
+
+The console provides helper methods:
+- `staging_client` - Creates a client configured for Vistar staging environment
+
+### Installing Locally
+
+```bash
+bundle exec rake install  # Install gem locally
+```
 
 ## Contributing
 

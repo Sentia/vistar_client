@@ -1,11 +1,32 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require "bundler/setup"
-require "vistar_client"
+require 'bundler/setup'
+require 'vistar_client'
 
-# You can add fixtures and/or initialization code here to make experimenting
-# with your gem easier. You can also use a different console, if you like.
+# Load environment variables if available
+if File.exist?('.env')
+  File.readlines('.env').each do |line|
+    next if line.strip.empty? || line.start_with?('#')
 
-require "irb"
-IRB.start(__FILE__)
+    key, value = line.split('=', 2)
+    ENV[key.strip] = value.strip if key && value
+  end
+end
+
+# Helper methods for console
+def staging_client
+  VistarClient::Client.new(
+    network_id: ENV['VISTAR_STAGING_NETWORK_ID'],
+    api_key: ENV['VISTAR_STAGING_API_KEY'],
+    api_base_url: ENV.fetch('VISTAR_STAGING_API_URL', 'https://sandbox-api.vistarmedia.com')
+  )
+end
+
+puts "VistarClient #{VistarClient::VERSION} console"
+puts "Type 'staging_client' to create a staging API client"
+puts 'Credentials loaded from .env file' if File.exist?('.env')
+puts ''
+
+require 'pry'
+Pry.start

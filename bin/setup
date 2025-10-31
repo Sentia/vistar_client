@@ -3,6 +3,24 @@ set -euo pipefail
 IFS=$'\n\t'
 set -vx
 
+echo "==> Installing dependencies..."
 bundle install
 
-# Do any other automated setup that you need to do here
+echo "==> Setting up environment..."
+# Copy environment template if needed
+if [ ! -f .env ]; then
+  cp .env.example .env
+  echo "✓ Created .env file. Please update with your credentials."
+else
+  echo "✓ .env file already exists"
+fi
+
+echo ""
+echo "==> Setup complete!"
+echo ""
+echo "Next steps:"
+echo "  1. Update .env with your Vistar API credentials"
+echo "  2. Run 'bin/console' to start an interactive session"
+echo "  3. Run 'bundle exec rspec' to run tests"
+echo "  4. Run 'bundle exec rubocop' to check code style"
+echo ""

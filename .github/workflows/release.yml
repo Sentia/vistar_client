@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+    
+    - name: Build gem
+      run: bundle exec rake build
+    
+    - name: Publish to RubyGems
+      env:
+        GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+      run: |
+        mkdir -p ~/.gem
+        gem push pkg/*.gem
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: pkg/*.gem
+        generate_release_notes: true
