@@ -69,9 +69,8 @@ module VistarClient
     # to maintain backward compatibility with tests.
     #
     # @param method [Symbol] the method name
-    # @param args [Array] the method arguments
-    # @param block [Proc] the block to pass to the method
     # @return [Object] the result of the delegated method call
+    # @raise [NoMethodError] if the method is not supported
     def method_missing(method, ...)
       if get.respond_to?(method)
         get.public_send(method, ...)

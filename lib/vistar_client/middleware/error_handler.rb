@@ -3,6 +3,13 @@
 require 'faraday'
 
 module VistarClient
+  # Faraday middleware components for the Vistar Media API client.
+  #
+  # This namespace contains custom Faraday middleware for:
+  # - Error handling and exception mapping
+  # - Request/response processing
+  #
+  # @see VistarClient::Middleware::ErrorHandler
   module Middleware
     # Faraday response middleware that intercepts HTTP responses and raises
     # appropriate VistarClient exceptions based on status codes.
@@ -21,11 +28,13 @@ module VistarClient
     class ErrorHandler < Faraday::Middleware
       # HTTP status codes that should raise exceptions
       CLIENT_ERROR_RANGE = (400..499)
+
+      # HTTP status codes for server errors
       SERVER_ERROR_RANGE = (500..599)
 
       # Process the request and handle any errors
       #
-      # @param env [Faraday::Env] the request environment
+      # @param request_env [Faraday::Env] the request environment
       # @return [Faraday::Response] the response
       # @raise [AuthenticationError] for 401 status
       # @raise [APIError] for other 4xx/5xx status codes
