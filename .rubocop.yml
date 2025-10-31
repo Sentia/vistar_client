@@ -51,13 +51,13 @@ Layout/LineLength:
     - 'spec/**/*.rb'
 
 RSpec/MultipleExpectations:
-  Max: 5
+  Max: 10
 
 RSpec/NestedGroups:
   Max: 4
 
 RSpec/ExampleLength:
-  Max: 25
+  Max: 30
 
 RSpec/MultipleMemoizedHelpers:
   Max: 10
@@ -73,3 +73,7 @@ RSpec/MessageSpies:
 
 MultipleDescribes:
   Enabled: false
+
+Style/MultilineBlockChain:
+  Exclude:
+    - 'spec/**/*.rb'
