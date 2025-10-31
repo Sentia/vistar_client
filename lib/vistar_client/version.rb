@@ -3,5 +3,5 @@
 module VistarClient
   # Current version of the VistarClient gem
   # @return [String] the semantic version number
-  VERSION = '0.2.0'
+  VERSION = '0.3.0'
 end

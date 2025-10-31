@@ -2,6 +2,8 @@
 
 require_relative 'connection'
 require_relative 'api/ad_serving'
+require_relative 'api/creative_caching'
+require_relative 'api/unified_serving'
 
 module VistarClient
   # The main client class for interacting with the Vistar Media API.
@@ -24,6 +26,8 @@ module VistarClient
   #   )
   class Client
     include API::AdServing
+    include API::CreativeCaching
+    include API::UnifiedServing
 
     # Default API base URL for Vistar Media
     DEFAULT_API_BASE_URL = 'https://api.vistarmedia.com'
