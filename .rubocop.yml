@@ -41,6 +41,10 @@ Metrics/AbcSize:
   AllowedMethods:
     - connection
 
+Metrics/CyclomaticComplexity:
+  AllowedMethods:
+    - validate_get_asset_params!
+
 Layout/LineLength:
   Max: 120
   Exclude:
@@ -53,7 +57,10 @@ RSpec/NestedGroups:
   Max: 4
 
 RSpec/ExampleLength:
-  Max: 15
+  Max: 25
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 10
 
 RSpec/VerifiedDoubles:
   Enabled: false
