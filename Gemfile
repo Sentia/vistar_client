@@ -12,7 +12,7 @@ gem 'erb', '< 5.0' # erb 5.0+ requires Ruby >= 3.2
 
 # Development dependencies
 gem 'pry', '~> 0.14'
-gem 'pry-byebug', '~> 3.10', platform: :mri if RUBY_VERSION >= '3.1.0'
+gem 'pry-byebug', '~> 3.10', platform: :mri
 gem 'rake', '~> 13.0'
 gem 'rspec', '~> 3.12'
 gem 'rubocop', '~> 1.50'
