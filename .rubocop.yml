@@ -48,3 +48,6 @@ RSpec/NestedGroups:
 
 RSpec/ExampleLength:
   Max: 15
+
+MultipleDescribes:
+  Enabled: false
