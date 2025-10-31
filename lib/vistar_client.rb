@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "vistar_client/version"
+require_relative 'vistar_client/version'
 
 module VistarClient
   class Error < StandardError; end

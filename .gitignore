@@ -9,4 +9,10 @@
 
 # rspec failure tracking
 .rspec_status
+
+# Environment variables
+.env
+
+# Internal documentation and instructions
 /docs/internal/*
+.github/copilot-instructions.md
