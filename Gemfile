@@ -7,6 +7,9 @@ gemspec
 
 gem 'irb'
 
+# Constrain erb for Ruby 3.1 compatibility
+gem 'erb', '< 5.1' # erb 5.1+ requires Ruby >= 3.2
+
 # Development dependencies
 gem 'pry', '~> 0.14'
 gem 'pry-byebug', '~> 3.10', platform: :mri if RUBY_VERSION >= '3.1.0'
