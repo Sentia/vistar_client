@@ -8,7 +8,7 @@ gemspec
 gem 'irb'
 
 # Constrain erb for Ruby 3.1 compatibility
-gem 'erb', '< 5.1' # erb 5.1+ requires Ruby >= 3.2
+gem 'erb', '< 5.0' # erb 5.0+ requires Ruby >= 3.2
 
 # Development dependencies
 gem 'pry', '~> 0.14'
